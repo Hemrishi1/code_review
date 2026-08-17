@@ -91,9 +91,9 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--model",
-        default="gemini-2.5-flash",
+        default="gemini-flash-latest",
         metavar="MODEL",
-        help="Gemini model to use (default: gemini-2.5-flash).",
+        help="Gemini model to use (default: gemini-flash-latest).",
     )
     parser.add_argument(
         "--verbose", "-v",
@@ -301,6 +301,12 @@ def run(args: argparse.Namespace) -> int:
 
 
 def main() -> None:
+    # Ensure Windows console supports Unicode / emojis
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
     load_dotenv()
     args = parse_args()
 

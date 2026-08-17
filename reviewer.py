@@ -97,7 +97,7 @@ def review_diff(
     filename: str,
     patch: str,
     gemini_api_key: str | None = None,
-    model: str = "gemini-2.5-flash",
+    model: str = "gemini-flash-latest",
 ) -> list[Finding]:
     """Send a single file's diff to Google Gemini and return structured findings.
 
