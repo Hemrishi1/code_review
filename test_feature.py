@@ -1,5 +1,10 @@
-# test_feature.py
-def calculate_discount(price, discount):
-    # Intentional bug: dividing by 0 or logic flaw
-    final_price = price - (price * discount)
-    return final_price
+# In test_feature.py
+import sqlite3
+
+def get_user_data(user_id):
+    conn = sqlite3.connect("users.db")
+    cursor = conn.cursor()
+    # Critical Bug: SQL injection vulnerability
+    query = f"SELECT * FROM users WHERE id = '{user_id}'"
+    cursor.execute(query)
+    return cursor.fetchall()
