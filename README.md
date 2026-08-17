@@ -184,7 +184,7 @@ GEMINI_API_KEY=your_gemini_api_key_here
 Preview what the AI reviewer would post without modifying GitHub:
 
 ```bash
-python main.py --repo Hemrishi1/code_review --pr 1 --dry-run
+python main.py --repo your-org/your-repo --pr 42 --dry-run
 ```
 
 **Example Output:**
@@ -214,7 +214,7 @@ _This review was generated automatically. False positives may occur — use your
 Run review and publish both summary and inline comments to the PR:
 
 ```bash
-python main.py --repo Hemrishi1/code_review --pr 1
+python main.py --repo your-org/your-repo --pr 42
 ```
 
 ---
@@ -244,8 +244,8 @@ usage: main.py [-h] --repo OWNER/NAME --pr NUMBER [--token GHTOKEN]
 
 Options:
   -h, --help            Show this help message and exit
-  --repo OWNER/NAME     GitHub repository in owner/name format (e.g. Hemrishi1/code_review)
-  --pr NUMBER           Pull request number to review (e.g. 1)
+  --repo OWNER/NAME     GitHub repository in owner/name format (e.g. acme/backend or your-org/your-repo)
+  --pr NUMBER           Pull request number to review (e.g. 42)
   --token GHTOKEN       GitHub personal access token (defaults to GITHUB_TOKEN env var)
   --gemini-key API_KEY  Google Gemini API key (defaults to GEMINI_API_KEY or GOOGLE_API_KEY env var)
   --dry-run             Print findings to stdout without posting comments to GitHub
@@ -349,7 +349,7 @@ WARNING: Retrying ... after connection broken by 'NewConnectionError('<...>: Fai
 #### Solution:
 1. Check that the PR is actually open at `https://github.com/<OWNER>/<REPO>/pull/<PR_NUMBER>`.
 2. Ensure your token in `.env` has the **`repo`** scope checked at [GitHub Tokens](https://github.com/settings/tokens).
-3. Ensure the `--repo` flag matches your repo's exact case (`Hemrishi1/code_review`).
+3. Ensure the `--repo` flag matches your repository's exact path (`owner/repo-name`).
 
 ---
 
@@ -369,7 +369,7 @@ google.genai.errors.ClientError: 404 NOT_FOUND.
 - This project defaults to `gemini-flash-latest` which always targets the current stable Flash release.
 - You can override the model on the fly using `--model`:
   ```cmd
-  python main.py --repo Hemrishi1/code_review --pr 1 --model gemini-flash-latest
+  python main.py --repo your-org/your-repo --pr 42 --model gemini-flash-latest
   ```
 
 ---
@@ -400,7 +400,7 @@ UnicodeEncodeError: 'charmap' codec can't encode character '\U0001f916' in posit
 - If running in custom scripts or older shells, set the console code page to UTF-8 before executing:
   ```cmd
   chcp 65001
-  python main.py --repo Hemrishi1/code_review --pr 1 --dry-run
+  python main.py --repo your-org/your-repo --pr 42 --dry-run
   ```
 
 ---
@@ -479,7 +479,7 @@ or
   ```
 - Ensure `load_dotenv()` can find the `.env` file, or supply the keys explicitly via CLI flags:
   ```cmd
-  python main.py --repo Owner/Repo --pr 1 --token ghp_xxx --gemini-key AQ.Ab_xxx
+  python main.py --repo your-org/your-repo --pr 42 --token ghp_xxx --gemini-key AQ.Ab_xxx
   ```
 
 ---
