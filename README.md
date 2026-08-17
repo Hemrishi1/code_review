@@ -1,194 +1,173 @@
-# 🤖 AI Code Review Bot (Google Gemini + GitHub Actions)
+<div align="center">
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Google Gemini API](https://img.shields.io/badge/AI-Google%20Gemini-orange.svg)](https://ai.google.dev/)
-[![GitHub Actions](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-brightgreen.svg)](https://github.com/features/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+# 🤖 AI Code Review Bot
+### *Automated, High-Precision Code Reviews Powered by Google Gemini & GitHub Actions*
 
-An automated, intelligent AI code reviewer that fetches GitHub Pull Request diffs, analyzes changed code using the **Google Gemini API** (`google-genai` SDK with structured JSON output), and automatically posts actionable feedback back to GitHub — both as a **summary status table** and as **inline diff comments** directly on the offending lines of code.
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![Google Gemini](https://img.shields.io/badge/Google%20Gemini-Flash-8E75B2?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
+[![GitHub Actions](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?style=for-the-badge&logo=github-actions&logoColor=white)](https://github.com/features/actions)
+[![PyGithub](https://img.shields.io/badge/PyGithub-API-black?style=for-the-badge&logo=github&logoColor=white)](https://pygithub.readthedocs.io/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-success?style=for-the-badge)](LICENSE)
+
+<br />
+
+[🚀 Quick Start](#-quick-start) •
+[✨ Key Features](#-features) •
+[📊 Architecture](#-system-architecture) •
+[🛠️ Configuration](#-configuration) •
+[🔧 Troubleshooting (10 Solutions)](#-troubleshooting-faq)
+
+<br />
 
 ---
 
-## 📑 Table of Contents
+</div>
 
-- [Features](#-features)
-- [Architecture & Flow](#-architecture--flow)
-- [Project Structure](#-project-structure)
-- [Prerequisites](#-prerequisites)
-- [Step-by-Step Setup Guide](#-step-by-step-setup-guide)
-  - [1. Clone & Environment Setup](#1-clone--environment-setup)
-  - [2. Obtain API Tokens](#2-obtain-api-tokens)
-  - [3. Configure Environment Variables](#3-configure-environment-variables)
-- [Usage](#-usage)
-  - [Local CLI (Dry-Run Mode)](#local-cli-dry-run-mode)
-  - [Local CLI (Live Posting)](#local-cli-live-posting)
-  - [Automated GitHub Actions CI/CD](#automated-github-actions-cicd)
-- [CLI Reference](#-cli-reference)
-- [Configuration Reference (`config.py`)](#-configuration-reference-configpy)
-- [Comprehensive Troubleshooting Guide](#-comprehensive-troubleshooting-guide)
-  - [1. Virtual Environment Activation Errors on Windows](#1-virtual-environment-activation-errors-on-windows)
-  - [2. Pip Download / DNS Errors (`[Errno 11001] getaddrinfo failed`)](#2-pip-download--dns-errors-errno-11001-getaddrinfo-failed)
-  - [3. GitHub API `404 Not Found` when fetching PR files](#3-github-api-404-not-found-when-fetching-pr-files)
-  - [4. Gemini Model `404 NOT_FOUND` or Deprecation Errors](#4-gemini-model-404-not_found-or-deprecation-errors)
-  - [5. Gemini API Key Format Questions (`AQ.Ab...` vs `AIzaSy...`)](#5-gemini-api-key-format-questions-aqab-vs-aizasy)
-  - [6. Windows Console Unicode / Emoji Crash (`UnicodeEncodeError: 'charmap'`)](#6-windows-console-unicode--emoji-crash-unicodeencodeerror-charmap)
-  - [7. GitHub Actions `403 Resource not accessible by integration`](#7-github-actions-403-resource-not-accessible-by-integration)
-  - [8. PowerShell Chaining Error (`The token '&&' is not a valid statement separator`)](#8-powershell-chaining-error-the-token--is-not-a-valid-statement-separator)
-  - [9. Inline Comments Not Appearing on PR Diff](#9-inline-comments-not-appearing-on-pr-diff)
-  - [10. Authentication & Missing Env Var Errors](#10-authentication--missing-env-var-errors)
-- [Contributing](#-contributing)
-- [License](#-license)
+## 🌟 Overview
+
+**AI Code Review Bot** is a production-ready, autonomous pull-request reviewer. It inspects unified Git diffs, prompts Google's Gemini models with strict JSON output schemas, and publishes structured feedback back to GitHub — featuring both a **high-level summary matrix** and **inline per-line diff annotations**.
+
+> 💡 **Why use this?** Catch SQL injections, memory leaks, missing null-checks, and anti-patterns *before* human reviewers even open the PR.
 
 ---
 
 ## ✨ Features
 
-| Feature | Description |
-|---|---|
-| 🧠 **Structured AI Outputs** | Uses `response_schema` in Google GenAI SDK for 100% typed, reliable JSON schema parsing without fragile text regexes. |
-| 💬 **Line-by-Line Inline Comments** | Attaches actionable comments directly to the exact file line in the GitHub PR diff. |
-| 📊 **Summary Review Table** | Generates an organized Markdown table categorized by severity level (`CRITICAL`, `WARNING`, `MINOR`). |
-| 🏷️ **Categorized Findings** | Identifies `bug`, `security`, `perf` (performance), and `style` violations. |
-| 🛡️ **Cost & Safety Guardrails** | Automatically skips lock files, binary assets, and files exceeding the 500-line diff threshold. |
-| 🔄 **Smart Deduplication** | Merges duplicate comments on the same `(file, line, category)` key and keeps the highest severity. |
-| 🧪 **Dry-Run Mode** | Test and preview reviews locally in your terminal before publishing any comments to GitHub. |
-| ⚡ **Zero-Config CI/CD** | Plug-and-play GitHub Actions workflow triggers automatically on PR open, synchronize, or reopen. |
+<table>
+  <tr>
+    <td width="50%">
+      <h3>🎯 100% Structured Schema</h3>
+      <p>Powered by Google GenAI's <code>response_schema</code> for guaranteed JSON adherence without fragile text regex parsing.</p>
+    </td>
+    <td width="50%">
+      <h3>💬 Inline Diff Annotations</h3>
+      <p>Attaches actionable recommendations directly on the offending line of code in the PR diff.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>🚦 Smart Severity Triage</h3>
+      <p>Ranks findings into <code>🔴 CRITICAL</code>, <code>🟡 WARNING</code>, and <code>🔵 MINOR</code> with configurable minimum posting thresholds.</p>
+    </td>
+    <td width="50%">
+      <h3>🛡️ Safe Cost Guardrails</h3>
+      <p>Automatically filters lockfiles, build artifacts, generated assets, and files exceeding diff length limits.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3>🔄 Intelligent Deduplication</h3>
+      <p>Combines overlapping issues on the same file/line/category and preserves the highest severity assessment.</p>
+    </td>
+    <td width="50%">
+      <h3>⚡ Dual-Mode Execution</h3>
+      <p>Run locally via CLI with <code>--dry-run</code> for tuning, or run autonomously in CI/CD on every PR open/update.</p>
+    </td>
+  </tr>
+</table>
 
 ---
 
-## 🏗 Architecture & Flow
+## 📊 System Architecture
 
-```
-   ┌────────────────────────────────────────────────────────┐
-   │                  GitHub Pull Request                   │
-   └───────────────────────────┬────────────────────────────┘
-                               │ (1) Fetch changed files & diff
-                               ▼
-   ┌────────────────────────────────────────────────────────┐
-   │             github_client.py (PyGithub)                │
-   └───────────────────────────┬────────────────────────────┘
-                               │ (2) Filter ignored paths / diff > 500 lines
-                               ▼
-   ┌────────────────────────────────────────────────────────┐
-   │                reviewer.py (Google GenAI)              │
-   │  - Model: gemini-flash-latest                          │
-   │  - System Prompt: Senior Code Reviewer                 │
-   │  - Output: Structured JSON Schema (Finding objects)    │
-   └───────────────────────────┬────────────────────────────┘
-                               │ (3) Deduplicate & sort by severity
-                               ▼
-   ┌────────────────────────────────────────────────────────┐
-   │                   main.py (Orchestrator)               │
-   └───────────────────────────┬────────────────────────────┘
-                               │
-            ┌──────────────────┴──────────────────┐
-            ▼                                     ▼
-┌───────────────────────────────┐   ┌───────────────────────────────┐
-│   Top-Level Summary Comment   │   │  Per-Line Diff Annotations    │
-│  (Markdown table of findings) │   │ (create_review_comment on SHA)│
-└───────────────────────────────┘   └───────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph GitHub ["🐙 GitHub"]
+        PR[Pull Request Created / Updated]
+        SummaryComment["📝 Summary Comment Posted"]
+        InlineComment["💬 Inline Diff Annotations"]
+    end
+
+    subgraph BotEngine ["⚙️ AI Code Review Bot Engine"]
+        Fetch["github_client.py<br/>Fetch Files & Diffs"]
+        Filter["config.py<br/>Filter Ignored Paths & >500 Lines"]
+        Reviewer["reviewer.py<br/>Google GenAI SDK (gemini-flash-latest)"]
+        Dedupe["main.py<br/>Deduplicate & Rank by Severity"]
+    end
+
+    PR -->|Trigger webhook / CLI| Fetch
+    Fetch --> Filter
+    Filter --> Reviewer
+    Reviewer -->|Typed JSON FindingSchema| Dedupe
+    Dedupe --> SummaryComment
+    Dedupe --> InlineComment
+
+    style GitHub fill:#161b22,stroke:#30363d,stroke-width:2px,color:#fff
+    style BotEngine fill:#0d1117,stroke:#58a6ff,stroke-width:2px,color:#fff
+    style Reviewer fill:#1f242c,stroke:#8E75B2,stroke-width:2px,color:#fff
 ```
 
 ---
 
-## 📁 Project Structure
-
-```
-code_review_bot/
-├── main.py                  # CLI orchestrator: argument parsing, deduplication, posting
-├── github_client.py         # GitHub API wrapper: fetch PR diffs, post summary & inline comments
-├── reviewer.py              # Gemini API engine: schema definition, system prompt, AI review
-├── models.py                # Data classes: Finding model, severity levels, markdown formatting
-├── config.py                # Settings: ignored paths, caps, severity thresholds, comment templates
-├── requirements.txt         # Pinned Python dependencies
-├── .env.example             # Template for local environment secrets
-├── .gitignore               # Ignores virtual environments, pycache, and secrets
-└── .github/
-    └── workflows/
-        └── review.yml       # GitHub Actions automated PR review workflow
-```
-
----
-
-## 📋 Prerequisites
-
-- **Python**: 3.11 or newer installed
-- **Git**: Installed and configured
-- **GitHub Account & Repository**: With administrative permissions to add repository secrets and create pull requests
-- **Google AI Studio Account**: For generating a Gemini API Key
-
----
-
-## 🚀 Step-by-Step Setup Guide
-
-### 1. Clone & Environment Setup
+## 📁 Repository Blueprint
 
 ```bash
-# Clone your repository
-git clone https://github.com/YOUR_USERNAME/code_review.git
-cd code_review
+code_review_bot/
+├── 📄 main.py              # CLI entrypoint, argument parsing, dedup, execution orchestrator
+├── 📄 github_client.py     # GitHub API interface (fetch patches, post comments, commit SHAs)
+├── 📄 reviewer.py          # Gemini AI core (typed schema, system instructions, review logic)
+├── 📄 models.py            # Finding dataclass & markdown rendering engine
+├── 📄 config.py            # Path filters, severity thresholds, max file caps
+├── 📄 requirements.txt     # Locked production dependencies
+├── 📄 .env.example         # Template for environment credentials
+└── 📂 .github/workflows/
+    └── 📄 review.yml       # Production-ready GitHub Actions workflow
+```
 
-# Create a virtual environment
+---
+
+## 🚀 Quick Start
+
+### 1️⃣ Clone & Set Up Environment
+
+```bash
+# Clone the repository
+git clone https://github.com/your-username/your-repo.git
+cd your-repo
+
+# Create and activate virtual environment
 python -m venv .venv
 
-# Activate the virtual environment
-# On Windows (Command Prompt):
+# Windows (Command Prompt):
 .venv\Scripts\activate
-# On Windows (PowerShell):
+# Windows (PowerShell):
 .\.venv\Scripts\Activate.ps1
-# On macOS / Linux:
+# macOS / Linux:
 source .venv/bin/activate
 
-# Install dependencies
+# Install required dependencies
 pip install -r requirements.txt
 ```
 
 ---
 
-### 2. Obtain API Tokens
+### 2️⃣ Configure Credentials
 
-#### A. Google Gemini API Key
-1. Go to **[Google AI Studio](https://aistudio.google.com/)**.
-2. Click **"Get API key"** → **"Create API key"**.
-3. Copy the key (it starts with `AIzaSy...` or `AQ.Ab...`).
+1. Copy `.env.example` to `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+2. Populate your secrets:
+   ```env
+   # GitHub Personal Access Token (classic with 'repo' scope)
+   GITHUB_TOKEN=ghp_your_github_token_here
 
-#### B. GitHub Personal Access Token (PAT)
-*(Needed for local testing; GitHub Actions uses automatic internal tokens)*
-1. Go to **[GitHub Personal Access Tokens (Classic)](https://github.com/settings/tokens)**.
-2. Click **Generate new token (classic)**.
-3. Note: `code-review-bot`.
-4. Select scope: ✅ **`repo`** (Full control of repositories).
-5. Click **Generate token** and copy the string (starts with `ghp_...`).
-
----
-
-### 3. Configure Environment Variables
-
-Copy `.env.example` to `.env` and fill in your keys:
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env`:
-```env
-GITHUB_TOKEN=ghp_your_github_token_here
-GEMINI_API_KEY=your_gemini_api_key_here
-```
+   # Google Gemini API Key from https://aistudio.google.com/
+   GEMINI_API_KEY=your_gemini_api_key_here
+   ```
 
 ---
 
-## 💻 Usage
+### 3️⃣ Test Run in Terminal (Dry-Run Mode)
 
-### Local CLI (Dry-Run Mode)
-Preview what the AI reviewer would post without modifying GitHub:
+Test against any open pull request without modifying GitHub:
 
 ```bash
-python main.py --repo your-org/your-repo --pr 42 --dry-run
+python main.py --repo your-org/your-repo --pr 1 --dry-run
 ```
 
-**Example Output:**
-```
+#### 📋 Sample Review Output:
+```markdown
 ========================================================================
 DRY RUN — Summary comment that would be posted:
 ========================================================================
@@ -197,11 +176,12 @@ DRY RUN — Summary comment that would be posted:
 Automated review generated by **gemini-code-reviewer**.
 Findings are ordered by severity. Please address **critical** issues before merging.
 
-Found **1** issue(s): **1** critical.
+Found **2** issue(s): **1** critical, **1** warning.
 
 | Severity | Category | File | Line | Issue |
-|----------|----------|------|------|-------|
+|---|---|---|---|---|
 | 🔴 Critical | `security` | `test_feature.py` | 8 | Direct string interpolation into SQL query allows SQL injection. Use parameterized query. |
+| 🟡 Warning | `bug` | `test_feature.py` | 5 | Database connection opened but never closed. Use context manager or conn.close(). |
 
 ---
 _This review was generated automatically. False positives may occur — use your own judgement._
@@ -210,27 +190,32 @@ _This review was generated automatically. False positives may occur — use your
 
 ---
 
-### Local CLI (Live Posting)
-Run review and publish both summary and inline comments to the PR:
+### 4️⃣ Live Execution via CLI
+
+To publish findings directly to GitHub:
 
 ```bash
-python main.py --repo your-org/your-repo --pr 42
+python main.py --repo your-org/your-repo --pr 1
 ```
 
 ---
 
-### Automated GitHub Actions CI/CD
+## ⚡ GitHub Actions CI/CD Integration
 
-1. Open your repository on GitHub.
-2. Navigate to **Settings → Secrets and variables → Actions → New repository secret**.
-3. Add:
+To automatically review every incoming Pull Request:
+
+1. **Add Repository Secret**:
+   - Go to your repository on GitHub: **Settings → Secrets and variables → Actions → New repository secret**.
    - **Name**: `GEMINI_API_KEY`
-   - **Secret**: `<Your Google Gemini API Key>`
-4. Go to **Settings → Actions → General → Workflow permissions**:
+   - **Value**: Your Gemini API Key from Google AI Studio.
+
+2. **Enable Workflow Permissions**:
+   - Go to **Settings → Actions → General → Workflow permissions**.
    - Select **Read and write permissions**.
    - Check **Allow GitHub Actions to create and approve pull requests**.
    - Click **Save**.
-5. Push any commit to a branch and open a Pull Request — the review bot will comment automatically!
+
+3. **Open a PR**: Open any Pull Request — the bot will review and post feedback automatically!
 
 ---
 
@@ -243,259 +228,176 @@ usage: main.py [-h] --repo OWNER/NAME --pr NUMBER [--token GHTOKEN]
                [--verbose]
 
 Options:
-  -h, --help            Show this help message and exit
-  --repo OWNER/NAME     GitHub repository in owner/name format (e.g. acme/backend or your-org/your-repo)
-  --pr NUMBER           Pull request number to review (e.g. 42)
-  --token GHTOKEN       GitHub personal access token (defaults to GITHUB_TOKEN env var)
-  --gemini-key API_KEY  Google Gemini API key (defaults to GEMINI_API_KEY or GOOGLE_API_KEY env var)
-  --dry-run             Print findings to stdout without posting comments to GitHub
-  --min-severity LEVEL  Minimum severity to post as inline comment: critical | warning | minor (default: warning)
-  --model MODEL         Gemini model name (default: gemini-flash-latest)
-  -v, --verbose         Enable debug-level logging
+  --repo OWNER/NAME       GitHub repository in owner/name format (e.g. your-org/your-repo)
+  --pr NUMBER             Pull request number to review (e.g. 42)
+  --token GHTOKEN         GitHub token (defaults to GITHUB_TOKEN environment variable)
+  --gemini-key API_KEY    Gemini API key (defaults to GEMINI_API_KEY or GOOGLE_API_KEY)
+  --dry-run               Print to stdout instead of posting comments to GitHub
+  --min-severity LEVEL    Minimum severity to post inline [critical | warning | minor] (default: warning)
+  --model MODEL           Gemini model identifier (default: gemini-flash-latest)
+  -v, --verbose           Enable debug logging output
 ```
 
 ---
 
-## 🛠️ Configuration Reference (`config.py`)
+## 🛠️ Configuration (`config.py`)
 
 | Setting | Default | Description |
 |---|---|---|
-| `IGNORED_PATHS` | `['node_modules', '.lock', 'dist/', 'build/', ...]` | Files containing these strings in their path are skipped from review. |
-| `MIN_SEVERITY_TO_POST` | `"warning"` | Lowest severity finding to post as an inline comment. |
-| `MAX_FILES_PER_RUN` | `20` | Caps the number of files analyzed per run to prevent excessive API consumption. |
-| `MAX_DIFF_LINES_PER_FILE`| `500` | Files exceeding this diff line count are safely skipped with a log warning. |
+| `IGNORED_PATHS` | `['node_modules', '.lock', 'dist/', ...]` | File patterns skipped from AI analysis |
+| `MIN_SEVERITY_TO_POST` | `"warning"` | Cutoff threshold for inline annotations |
+| `MAX_FILES_PER_RUN` | `20` | Cap on files reviewed per run to control token spend |
+| `MAX_DIFF_LINES_PER_FILE` | `500` | Safety limit to prevent reviewing oversized diffs |
 
 ---
 
-## 🔧 Comprehensive Troubleshooting Guide
+## 🔧 Troubleshooting & FAQ
 
-Here is the complete step-by-step solution for all common issues:
+<details>
+<summary><b>1. Virtual environment activation error on Windows</b></summary>
+<br/>
 
----
+**Symptom:**
+```
+/.venv/Scripts/activate : The system cannot find the path specified.
+```
+**Fix:**
+- Windows Command Prompt requires backslashes: `.venv\Scripts\activate`
+- In PowerShell, run: `Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser` and then `.\.venv\Scripts\Activate.ps1`
+</details>
 
-### 1. Virtual Environment Activation Errors on Windows
+<details>
+<summary><b>2. Pip download errors ([Errno 11001] getaddrinfo failed)</b></summary>
+<br/>
 
-#### Symptom:
+**Symptom:**
 ```
-/.venv/Scripts/activate
-The system cannot find the path specified.
+WARNING: Retrying ... [Errno 11001] getaddrinfo failed
 ```
-or
-```
-.venv/Scripts/activate
-'.venv' is not recognized as an internal or external command
-```
-or PowerShell Execution Policy error:
-```
-File .venv\Scripts\Activate.ps1 cannot be loaded because running scripts is disabled on this system.
-```
-
-#### Cause:
-- Windows Command Prompt (`cmd.exe`) requires **backslashes** `\`, not forward slashes `/`.
-- PowerShell blocks script execution by default.
-
-#### Solution:
-- **For Command Prompt (`cmd.exe`)**:
+**Fix:**
+- Pip automatically retries up to 5 times. If your DNS is slow, allow it to complete.
+- Or pass trusted hosts:
   ```cmd
-  .venv\Scripts\activate
+  pip install -r requirements.txt --trusted-host pypi.org --trusted-host files.pythonhosted.org
   ```
-- **For PowerShell**: Run as Administrator once to enable script execution:
-  ```powershell
-  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-  .\.venv\Scripts\Activate.ps1
-  ```
-- **For Git Bash**:
-  ```bash
-  source .venv/Scripts/activate
-  ```
+</details>
 
----
+<details>
+<summary><b>3. GitHub API 404 Not Found</b></summary>
+<br/>
 
-### 2. Pip Download / DNS Errors (`[Errno 11001] getaddrinfo failed`)
-
-#### Symptom:
-```
-WARNING: Retrying ... after connection broken by 'NewConnectionError('<...>: Failed to establish a new connection: [Errno 11001] getaddrinfo failed')': /pydantic/
-```
-
-#### Cause:
-- Temporary DNS resolution lag, network interruption, or firewall/VPN blocking PyPI domains during package downloads.
-
-#### Solution:
-1. **Allow Pip to Retry**: Pip has automatic retries (up to 5 attempts) built in. In most cases, it successfully connects after the second attempt.
-2. **Explicitly trust PyPI hosts**:
-   ```cmd
-   pip install -r requirements.txt --trusted-host pypi.org --trusted-host files.pythonhosted.org
-   ```
-3. **Disable VPN / Proxy**: If behind a corporate proxy, set the proxy flag:
-   ```cmd
-   pip install -r requirements.txt --proxy http://user:password@proxyserver:port
-   ```
-
----
-
-### 3. GitHub API `404 Not Found` when fetching PR files
-
-#### Symptom:
+**Symptom:**
 ```
 [ERROR] github_client: GitHub API error fetching PR files: 404 {"message": "Not Found"}
 ```
+**Fix:**
+- Verify the Pull Request is open at `https://github.com/<owner>/<repo>/pull/<number>`.
+- If the repository is private, ensure your `GITHUB_TOKEN` has the `repo` scope enabled at [GitHub Tokens](https://github.com/settings/tokens).
+</details>
 
-#### Cause:
-1. **The PR does not exist yet**: Running `--pr 1` before creating a pull request on GitHub.
-2. **Private Repository without Token**: The repo is private and no `GITHUB_TOKEN` was provided or the token lacks the `repo` scope.
-3. **Typo in `--repo` argument**: For example, typing `user/repo` instead of the exact `Owner/Repo_Name`.
+<details>
+<summary><b>4. Gemini model 404 NOT_FOUND or Deprecation errors</b></summary>
+<br/>
 
-#### Solution:
-1. Check that the PR is actually open at `https://github.com/<OWNER>/<REPO>/pull/<PR_NUMBER>`.
-2. Ensure your token in `.env` has the **`repo`** scope checked at [GitHub Tokens](https://github.com/settings/tokens).
-3. Ensure the `--repo` flag matches your repository's exact path (`owner/repo-name`).
-
----
-
-### 4. Gemini Model `404 NOT_FOUND` or Deprecation Errors
-
-#### Symptom:
+**Symptom:**
 ```
-google.genai.errors.ClientError: 404 NOT_FOUND.
-{'error': {'code': 404, 'message': 'This model models/gemini-2.5-flash is no longer available to new users.'}}
+ClientError: 404 NOT_FOUND. Model is no longer available to new users.
 ```
+**Fix:**
+- Use the stable alias **`gemini-flash-latest`** (configured as default in `reviewer.py` and `main.py`).
+</details>
 
-#### Cause:
-- Hardcoding a deprecated or preview model name that has been superseded in the Google GenAI endpoint.
+<details>
+<summary><b>5. Gemini API Key prefix (AQ.Ab... vs AIzaSy...)</b></summary>
+<br/>
 
-#### Solution:
-- Use the alias **`gemini-flash-latest`** or **`gemini-2.0-flash`** / **`gemini-1.5-flash`**.
-- This project defaults to `gemini-flash-latest` which always targets the current stable Flash release.
-- You can override the model on the fly using `--model`:
-  ```cmd
-  python main.py --repo your-org/your-repo --pr 42 --model gemini-flash-latest
-  ```
+**Question:**
+> *"My API key starts with `AQ.Ab...`. Is that supported?"*
 
----
+**Answer:**
+- Yes. Google AI Studio produces keys with various prefixes based on region and tier. The bot passes the full key string directly to the Google GenAI client.
+</details>
 
-### 5. Gemini API Key Format Questions (`AQ.Ab...` vs `AIzaSy...`)
+<details>
+<summary><b>6. Windows Unicode / Emoji encoding crash (UnicodeEncodeError: 'charmap')</b></summary>
+<br/>
 
-#### Question:
-> *"My Gemini API key starts with `AQ.Ab...` instead of `AIzaSy...`. Is this supported?"*
-
-#### Answer:
-- **Yes!** Google AI Studio issues API keys with different prefixes depending on the account tier and project region (`AQ.Ab...`, `AIzaSy...`, etc.).
-- The bot does not validate key prefixes; it passes the raw token directly to the Google GenAI SDK. Paste your complete key into `.env` under `GEMINI_API_KEY`.
-
----
-
-### 6. Windows Console Unicode / Emoji Crash (`UnicodeEncodeError: 'charmap'`)
-
-#### Symptom:
+**Symptom:**
 ```
-UnicodeEncodeError: 'charmap' codec can't encode character '\U0001f916' in position 3: character maps to <undefined>
+UnicodeEncodeError: 'charmap' codec can't encode character '\U0001f916'
 ```
+**Fix:**
+- `main.py` automatically configures UTF-8 encoding on startup.
+- In legacy consoles, run `chcp 65001` before executing Python scripts.
+</details>
 
-#### Cause:
-- Windows Command Prompt traditionally defaults to legacy code page `cp1252`, which cannot print emojis like 🤖, 🔴, 🟡.
+<details>
+<summary><b>7. GitHub Actions 403 Resource not accessible by integration</b></summary>
+<br/>
 
-#### Solution:
-- In `main.py`, `sys.stdout.reconfigure(encoding='utf-8')` is automatically invoked at startup.
-- If running in custom scripts or older shells, set the console code page to UTF-8 before executing:
-  ```cmd
-  chcp 65001
-  python main.py --repo your-org/your-repo --pr 42 --dry-run
-  ```
-
----
-
-### 7. GitHub Actions `403 Resource not accessible by integration`
-
-#### Symptom:
-GitHub Actions fails on the step `post_review_comment` with:
+**Symptom:**
 ```
-403 {"message": "Resource not accessible by integration", "status": "403"}
+403 {"message": "Resource not accessible by integration"}
 ```
+**Fix:**
+- In your repository settings: Go to **Settings → Actions → General → Workflow permissions** → Select **Read and write permissions** and click **Save**.
+</details>
 
-#### Cause:
-- The default `${{ secrets.GITHUB_TOKEN }}` in GitHub Actions does not have write permissions to post pull request comments.
+<details>
+<summary><b>8. PowerShell chaining error (The token '&&' is not a valid separator)</b></summary>
+<br/>
 
-#### Solution:
-1. Ensure `.github/workflows/review.yml` contains:
-   ```yaml
-   permissions:
-     pull-requests: write
-     contents: read
-   ```
-2. In your GitHub repository: Go to **Settings → Actions → General → Workflow permissions** → Check **"Read and write permissions"** and **Save**.
-
----
-
-### 8. PowerShell Chaining Error (`The token '&&' is not a valid statement separator`)
-
-#### Symptom:
+**Symptom:**
 ```
-git add .env.example && git commit -m "update"
 The token '&&' is not a valid statement separator in this version.
 ```
-
-#### Cause:
-- Windows PowerShell 5.1 (the default built into Windows) does not support the Bash-style `&&` operator.
-
-#### Solution:
-- Use a semicolon `;` to chain commands in PowerShell:
+**Fix:**
+- In Windows PowerShell, use a semicolon `;` instead of `&&`:
   ```powershell
   git add -A; git commit -m "message"; git push origin main
   ```
-- Or run each command on a new line.
+</details>
 
----
+<details>
+<summary><b>9. Inline comments not posting on specific lines</b></summary>
+<br/>
 
-### 9. Inline Comments Not Appearing on PR Diff
-
-#### Symptom:
-- The summary table is posted, but inline comments on specific code lines are omitted or logged with a warning: `Could not post inline comment on file:line`.
-
-#### Cause:
-- GitHub only allows inline review comments on lines that are **part of the pull request unified diff** (new or modified lines). Unmodified context lines cannot receive inline comments via the review comment API.
-
-#### Solution:
-- The bot handles this gracefully: findings on unmodified lines will still appear in the **Top-Level Summary Table**, while lines present in the diff will receive direct inline comments.
-
----
-
-### 10. Authentication & Missing Env Var Errors
-
-#### Symptom:
+**Symptom:**
 ```
-[ERROR] main: No GitHub token provided. Set --token or the GITHUB_TOKEN env var.
+Could not post inline comment on file:line
 ```
-or
-```
-[ERROR] main: No Google Gemini API key provided. Set --gemini-key, GEMINI_API_KEY, or GOOGLE_API_KEY env var.
-```
+**Fix:**
+- GitHub's review comment API only allows inline annotations on lines present in the PR's unified diff. Issues identified on unmodified lines are automatically included in the top-level Summary Matrix instead.
+</details>
 
-#### Solution:
-- Verify your `.env` file exists in the root directory and contains:
-  ```env
-  GITHUB_TOKEN=ghp_...
-  GEMINI_API_KEY=...
-  ```
-- Ensure `load_dotenv()` can find the `.env` file, or supply the keys explicitly via CLI flags:
-  ```cmd
-  python main.py --repo your-org/your-repo --pr 42 --token ghp_xxx --gemini-key AQ.Ab_xxx
-  ```
+<details>
+<summary><b>10. Missing environment variable error</b></summary>
+<br/>
+
+**Symptom:**
+```
+[ERROR] main: No Google Gemini API key provided.
+```
+**Fix:**
+- Ensure your `.env` file exists in the project root containing `GEMINI_API_KEY=...` and `GITHUB_TOKEN=...`, or pass them explicitly via `--gemini-key` and `--token`.
+</details>
 
 ---
 
 ## 🤝 Contributing
 
-Contributions, issues, and feature requests are welcome!
-
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'feat: Add some AmazingFeature'`)
+3. Commit your Changes (`git commit -m 'feat: Add AmazingFeature'`)
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request — let the bot review your code! 🎉
+5. Open a Pull Request & let the bot review your PR! 🎉
 
 ---
 
 ## 📄 License
 
-Distributed under the MIT License. See [LICENSE](LICENSE) for more information.
+Distributed under the **MIT License**. See [LICENSE](LICENSE) for more information.
+
+<div align="center">
+  <sub>Built with ❤️ using Google Gemini & GitHub Actions</sub>
+</div>
