@@ -1,8 +1,8 @@
 # 🤖 AI Code Review Bot
 
-An automated code review tool that fetches GitHub PR diffs, sends them to [Claude](https://www.anthropic.com/claude) for analysis, and posts structured findings back as PR comments — both as a summary table and as inline diff annotations.
+An automated code review tool that fetches GitHub PR diffs, sends them to [Google Gemini](https://ai.google.dev/) for analysis, and posts structured findings back as PR comments — both as a summary table and as inline diff annotations.
 
-> Built with **Python 3.11+**, **PyGithub**, and the **Anthropic SDK** (tool-use for structured output).
+> Built with **Python 3.11+**, **PyGithub**, and the **Google GenAI SDK** (`google-genai` with structured JSON schema outputs).
 
 ---
 
@@ -10,7 +10,7 @@ An automated code review tool that fetches GitHub PR diffs, sends them to [Claud
 
 | Feature | Detail |
 |---|---|
-| **Structured output** | Claude returns JSON via `tool_use` — no fragile text parsing |
+| **Structured output** | Gemini returns typed JSON via `response_schema` — no fragile text parsing |
 | **Inline comments** | Findings are posted directly on the offending diff line |
 | **Severity tiers** | `critical` / `warning` / `minor` with configurable posting threshold |
 | **Categories** | `bug`, `security`, `style`, `perf` |
@@ -27,7 +27,7 @@ An automated code review tool that fetches GitHub PR diffs, sends them to [Claud
 code_review_bot/
 ├── main.py              # CLI entrypoint
 ├── github_client.py     # GitHub API: fetch diffs, post comments
-├── reviewer.py          # Claude API: review diffs, return structured findings
+├── reviewer.py          # Gemini API: review diffs, return structured findings
 ├── models.py            # Finding dataclass
 ├── config.py            # Thresholds, ignored paths, severity config
 ├── requirements.txt
@@ -44,8 +44,8 @@ code_review_bot/
 ### 1. Clone & install
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/code-review-bot.git
-cd code-review-bot
+git clone https://github.com/YOUR_USERNAME/code_review.git
+cd code_review
 pip install -r requirements.txt
 ```
 
@@ -61,7 +61,7 @@ Required variables:
 | Variable | Where to get it |
 |---|---|
 | `GITHUB_TOKEN` | [GitHub → Settings → Developer Settings → PAT](https://github.com/settings/tokens) (needs `repo` + `pull_requests` scopes) |
-| `ANTHROPIC_API_KEY` | [Anthropic Console](https://console.anthropic.com/) |
+| `GEMINI_API_KEY` | [Google AI Studio](https://aistudio.google.com/) |
 
 ### 3. Dry-run on an existing PR
 
@@ -107,10 +107,10 @@ Required:
 
 Optional:
   --token GHTOKEN         GitHub token (default: $GITHUB_TOKEN)
-  --anthropic-key KEY     Anthropic API key (default: $ANTHROPIC_API_KEY)
+  --gemini-key KEY        Google Gemini API key (default: $GEMINI_API_KEY or $GOOGLE_API_KEY)
   --dry-run               Print to stdout instead of posting to GitHub
   --min-severity LEVEL    Minimum severity to post inline [critical|warning|minor] (default: warning)
-  --model MODEL           Claude model to use (default: claude-sonnet-4-5)
+  --model MODEL           Gemini model to use (default: gemini-2.5-flash)
   -v, --verbose           Enable debug logging
 ```
 
@@ -118,12 +118,12 @@ Optional:
 
 ## 🔄 GitHub Actions Setup
 
-### 1. Add your Anthropic API key as a secret
+### 1. Add your Gemini API key as a secret
 
 Go to **Settings → Secrets and variables → Actions → New repository secret**:
 
-- Name: `ANTHROPIC_API_KEY`
-- Value: your key from the Anthropic Console
+- Name: `GEMINI_API_KEY`
+- Value: your key from [Google AI Studio](https://aistudio.google.com/)
 
 > `GITHUB_TOKEN` is automatically provided by GitHub Actions — no setup needed.
 
@@ -145,7 +145,7 @@ Go to **Settings → Actions → General → Workflow permissions** and select:
 |---|---|---|
 | `IGNORED_PATHS` | `node_modules`, `.lock`, `dist/`, ... | File path substrings to skip |
 | `MIN_SEVERITY_TO_POST` | `"warning"` | Threshold for inline comments |
-| `MAX_FILES_PER_RUN` | `20` | Cap Claude API calls per review run |
+| `MAX_FILES_PER_RUN` | `20` | Cap Gemini API calls per review run |
 | `MAX_DIFF_LINES_PER_FILE` | `500` | Skip files with too many changed lines |
 
 ---
@@ -171,4 +171,4 @@ Go to **Settings → Actions → General → Workflow permissions** and select:
 
 ## 📄 License
 
-MIT — see [LICENSE](LICENSE).
+MIT

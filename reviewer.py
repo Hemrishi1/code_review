@@ -1,7 +1,7 @@
 """
-reviewer.py - AI-powered diff reviewer using the Anthropic Claude API.
+reviewer.py - AI-powered diff reviewer using the Google Gemini API (google-genai SDK).
 
-Sends each file's patch to Claude via the tool_use API to obtain structured
+Sends each file's patch to Gemini with structured JSON output schema to obtain
 Finding objects, then returns them for aggregation by main.py.
 """
 
@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any
+from typing import Any, Literal
 
-import anthropic
+from google import genai
+from google.genai import types
+from pydantic import BaseModel, Field
 
 from config import IGNORED_PATHS, MAX_DIFF_LINES_PER_FILE
 from models import Finding
@@ -19,72 +21,36 @@ from models import Finding
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Tool schema for structured output
+# Structured Schema using Pydantic
 # ---------------------------------------------------------------------------
 
-REVIEW_TOOL_NAME = "report_findings"
 
-REVIEW_TOOL_SCHEMA: dict[str, Any] = {
-    "name": REVIEW_TOOL_NAME,
-    "description": (
-        "Report all code review findings for the provided diff. "
-        "Call this tool once with an array of every finding discovered."
-    ),
-    "input_schema": {
-        "type": "object",
-        "properties": {
-            "findings": {
-                "type": "array",
-                "description": "Array of code review findings (may be empty if nothing notable found).",
-                "items": {
-                    "type": "object",
-                    "required": ["file", "line", "severity", "category", "comment"],
-                    "properties": {
-                        "file": {
-                            "type": "string",
-                            "description": "File path exactly as it appears in the diff header.",
-                        },
-                        "line": {
-                            "type": "integer",
-                            "description": (
-                                "The line number in the **new** version of the file "
-                                "where the issue is located."
-                            ),
-                        },
-                        "severity": {
-                            "type": "string",
-                            "enum": ["critical", "warning", "minor"],
-                            "description": (
-                                "critical = must fix before merge; "
-                                "warning = should fix; "
-                                "minor = optional improvement."
-                            ),
-                        },
-                        "category": {
-                            "type": "string",
-                            "enum": ["bug", "security", "style", "perf"],
-                            "description": "Primary category of the issue.",
-                        },
-                        "comment": {
-                            "type": "string",
-                            "description": (
-                                "Concise, actionable comment explaining the issue "
-                                "and how to fix it. Max 3 sentences."
-                            ),
-                        },
-                    },
-                },
-            }
-        },
-        "required": ["findings"],
-    },
-}
+class FindingSchema(BaseModel):
+    file: str = Field(description="File path exactly as it appears in the diff header.")
+    line: int = Field(description="The line number in the new version of the file where the issue is located.")
+    severity: Literal["critical", "warning", "minor"] = Field(
+        description="critical = must fix before merge; warning = should fix; minor = optional improvement."
+    )
+    category: Literal["bug", "security", "style", "perf"] = Field(
+        description="Primary category of the issue: bug, security, style, or perf."
+    )
+    comment: str = Field(
+        description="Concise, actionable comment explaining the issue and how to fix it in <=3 sentences."
+    )
+
+
+class ReviewResultSchema(BaseModel):
+    findings: list[FindingSchema] = Field(
+        default_factory=list,
+        description="List of code review findings. Empty if no issues are detected.",
+    )
+
 
 # ---------------------------------------------------------------------------
-# System prompt
+# System instruction
 # ---------------------------------------------------------------------------
 
-SYSTEM_PROMPT = """\
+SYSTEM_INSTRUCTION = """\
 You are a senior software engineer performing a thorough code review.
 
 Your responsibilities:
@@ -94,11 +60,11 @@ Your responsibilities:
 - Flag **performance** issues (N+1 queries, unnecessary allocations, blocking I/O in hot paths).
 
 Guidelines:
-- Only report **high-confidence** issues.  When in doubt, omit the finding.
+- Only report **high-confidence** issues. When in doubt, omit the finding.
 - Do NOT report trivial nitpicks about whitespace, variable naming conventions, or comment typos unless asked.
 - Be **concise and actionable**: each comment should explain the problem and suggest a fix in ≤3 sentences.
 - Respect the line numbers from the diff: `line` must correspond to the **new-file** line number.
-- Use the `report_findings` tool to return your results as structured JSON.
+- Always output valid JSON conforming to the requested schema.
 """
 
 # ---------------------------------------------------------------------------
@@ -109,7 +75,6 @@ Guidelines:
 def _is_ignored(filename: str) -> bool:
     """Return True if the file should be skipped based on IGNORED_PATHS."""
     for pattern in IGNORED_PATHS:
-        # Support both plain substrings and simple glob-like "*.ext" patterns.
         if pattern.startswith("*."):
             if filename.endswith(pattern[1:]):
                 return True
@@ -131,22 +96,19 @@ def _count_diff_lines(patch: str) -> int:
 def review_diff(
     filename: str,
     patch: str,
-    anthropic_api_key: str | None = None,
-    model: str = "claude-sonnet-4-5",
+    gemini_api_key: str | None = None,
+    model: str = "gemini-2.5-flash",
 ) -> list[Finding]:
-    """Send a single file's diff to Claude and return structured findings.
+    """Send a single file's diff to Google Gemini and return structured findings.
 
     Args:
-        filename:          Repo-relative file path (e.g. ``"src/app.py"``).
-        patch:             Unified diff text from the GitHub API.
-        anthropic_api_key: Overrides the ``ANTHROPIC_API_KEY`` env var when set.
-        model:             Claude model to use.
+        filename:       Repo-relative file path (e.g. ``"src/app.py"``).
+        patch:          Unified diff text from the GitHub API.
+        gemini_api_key: Overrides the ``GEMINI_API_KEY`` or ``GOOGLE_API_KEY`` env var.
+        model:          Gemini model to use (default: ``"gemini-2.5-flash"``).
 
     Returns:
         A (possibly empty) list of :class:`Finding` objects.
-
-    Raises:
-        anthropic.APIError: Propagated on unrecoverable API failures.
     """
     if _is_ignored(filename):
         logger.info("Skipping ignored file: %s", filename)
@@ -166,43 +128,58 @@ def review_diff(
         )
         return []
 
-    client = anthropic.Anthropic(api_key=anthropic_api_key) if anthropic_api_key else anthropic.Anthropic()
+    client = genai.Client(api_key=gemini_api_key) if gemini_api_key else genai.Client()
 
-    user_message = (
-        f"Please review the following diff for `{filename}`.\n\n"
+    user_prompt = (
+        f"Please review the following diff for `{filename}`:\n\n"
         f"```diff\n{patch}\n```\n\n"
-        "Use the `report_findings` tool to return all issues you find."
+        "Return all findings structured according to the response schema."
     )
 
-    logger.debug("Sending %s to Claude (%d diff lines).", filename, diff_lines)
+    logger.debug("Sending %s to Gemini (%d diff lines, model: %s).", filename, diff_lines, model)
 
-    response = client.messages.create(
+    config = types.GenerateContentConfig(
+        system_instruction=SYSTEM_INSTRUCTION,
+        response_mime_type="application/json",
+        response_schema=ReviewResultSchema,
+        temperature=0.2,
+    )
+
+    response = client.models.generate_content(
         model=model,
-        max_tokens=4096,
-        system=SYSTEM_PROMPT,
-        tools=[REVIEW_TOOL_SCHEMA],
-        tool_choice={"type": "tool", "name": REVIEW_TOOL_NAME},
-        messages=[{"role": "user", "content": user_message}],
+        contents=user_prompt,
+        config=config,
     )
 
-    # Extract tool use block
     findings: list[Finding] = []
-    for block in response.content:
-        if block.type == "tool_use" and block.name == REVIEW_TOOL_NAME:
-            raw_findings: list[dict[str, Any]] = block.input.get("findings", [])
+    
+    if response.parsed and isinstance(response.parsed, ReviewResultSchema):
+        for item in response.parsed.findings:
+            findings.append(
+                Finding(
+                    file=item.file or filename,
+                    line=item.line,
+                    severity=item.severity,
+                    category=item.category,
+                    comment=item.comment,
+                )
+            )
+    elif response.text:
+        try:
+            data = json.loads(response.text)
+            raw_findings = data.get("findings", []) if isinstance(data, dict) else []
             for raw in raw_findings:
-                try:
-                    findings.append(
-                        Finding(
-                            file=raw["file"],
-                            line=int(raw["line"]),
-                            severity=raw["severity"],
-                            category=raw["category"],
-                            comment=raw["comment"],
-                        )
+                findings.append(
+                    Finding(
+                        file=raw.get("file", filename),
+                        line=int(raw["line"]),
+                        severity=raw["severity"],
+                        category=raw["category"],
+                        comment=raw["comment"],
                     )
-                except (KeyError, ValueError, TypeError) as exc:
-                    logger.warning("Skipping malformed finding from Claude: %s — %s", raw, exc)
+                )
+        except Exception as exc:
+            logger.warning("Failed to parse Gemini response JSON: %s (Raw: %s)", exc, response.text)
 
-    logger.info("Claude returned %d finding(s) for %s.", len(findings), filename)
+    logger.info("Gemini returned %d finding(s) for %s.", len(findings), filename)
     return findings

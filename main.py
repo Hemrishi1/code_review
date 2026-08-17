@@ -45,7 +45,7 @@ logger = logging.getLogger("main")
 
 def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="AI Code Review Bot — reviews a GitHub PR using Claude."
+        description="AI Code Review Bot — reviews a GitHub PR using Google Gemini."
     )
     parser.add_argument(
         "--repo",
@@ -67,10 +67,12 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
         help="GitHub personal access token (defaults to GITHUB_TOKEN env var).",
     )
     parser.add_argument(
-        "--anthropic-key",
+        "--gemini-key",
+        "--google-api-key",
+        dest="gemini_key",
         default=None,
         metavar="API_KEY",
-        help="Anthropic API key (defaults to ANTHROPIC_API_KEY env var).",
+        help="Google Gemini API key (defaults to GEMINI_API_KEY or GOOGLE_API_KEY env var).",
     )
     parser.add_argument(
         "--dry-run",
@@ -89,9 +91,9 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     )
     parser.add_argument(
         "--model",
-        default="claude-sonnet-4-5",
+        default="gemini-2.5-flash",
         metavar="MODEL",
-        help="Claude model to use (default: claude-sonnet-4-5).",
+        help="Gemini model to use (default: gemini-2.5-flash).",
     )
     parser.add_argument(
         "--verbose", "-v",
@@ -181,18 +183,18 @@ def run(args: argparse.Namespace) -> int:
     github_token = args.token or os.environ.get("GITHUB_TOKEN")
     if not github_token:
         logger.error(
-            "No GitHub token provided.  Set --token or the GITHUB_TOKEN env var."
+            "No GitHub token provided. Set --token or the GITHUB_TOKEN env var."
         )
         return 1
 
-    anthropic_key = args.anthropic_key or os.environ.get("ANTHROPIC_API_KEY")
-    if not anthropic_key:
+    gemini_key = args.gemini_key or os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if not gemini_key:
         logger.error(
-            "No Anthropic API key provided.  Set --anthropic-key or the ANTHROPIC_API_KEY env var."
+            "No Google Gemini API key provided. Set --gemini-key, GEMINI_API_KEY, or GOOGLE_API_KEY env var."
         )
         return 1
 
-    logger.info("Starting review: %s PR #%d", args.repo, args.pr)
+    logger.info("Starting review: %s PR #%d (Model: %s)", args.repo, args.pr, args.model)
 
     # ---- Fetch PR files ----------------------------------------------------
     try:
@@ -231,7 +233,7 @@ def run(args: argparse.Namespace) -> int:
             findings = review_diff(
                 filename=filename,
                 patch=patch,
-                anthropic_api_key=anthropic_key,
+                gemini_api_key=gemini_key,
                 model=args.model,
             )
             all_findings.extend(findings)
